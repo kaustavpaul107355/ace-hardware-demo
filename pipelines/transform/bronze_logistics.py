@@ -28,3 +28,4 @@ def logistics_bronze():
         .schema(LOGISTICS_SCHEMA)
         .load(TELEMETRY_PATH)
     )
+

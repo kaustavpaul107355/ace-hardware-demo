@@ -91,3 +91,4 @@ def shipment_line_items_bronze():
         .schema(SHIPMENT_LINE_ITEMS_SCHEMA)
         .load(f"{DIMENSIONS_PATH}/shipment_line_items.csv")
     )
+

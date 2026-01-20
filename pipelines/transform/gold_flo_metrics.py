@@ -128,3 +128,4 @@ def product_category_metrics():
             avg("d.temperature_celsius").alias("avg_temperature")
         )
     )
+

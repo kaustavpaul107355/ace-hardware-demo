@@ -58,12 +58,12 @@ Upload generated files to:
    - **Target Schema**: `ace_demo`
    - **Source Code**: Add notebook paths:
      ```
-     /Workspace/Users/kaustav.paul@databricks.com/ace-demo/pipelines/config.py
-     /Workspace/Users/kaustav.paul@databricks.com/ace-demo/pipelines/bronze_logistics.py
-     /Workspace/Users/kaustav.paul@databricks.com/ace-demo/pipelines/bronze_dimensions.py
-     /Workspace/Users/kaustav.paul@databricks.com/ace-demo/pipelines/silver_logistics.py
-     /Workspace/Users/kaustav.paul@databricks.com/ace-demo/pipelines/gold_flo_metrics.py
-     /Workspace/Users/kaustav.paul@databricks.com/ace-demo/pipelines/analytics_views.sql
+     /Workspace/Users/kaustav.paul@databricks.com/ace-demo/pipelines/config/config.py
+     /Workspace/Users/kaustav.paul@databricks.com/ace-demo/pipelines/transform/bronze_logistics.py
+     /Workspace/Users/kaustav.paul@databricks.com/ace-demo/pipelines/transform/bronze_dimensions.py
+     /Workspace/Users/kaustav.paul@databricks.com/ace-demo/pipelines/transform/silver_logistics.py
+     /Workspace/Users/kaustav.paul@databricks.com/ace-demo/pipelines/transform/gold_flo_metrics.py
+     /Workspace/Users/kaustav.paul@databricks.com/ace-demo/pipelines/analytics/analytics_views
      ```
 
 ## Architecture
@@ -138,16 +138,19 @@ ARRIVED_DC → OUT_FOR_DELIVERY → DELIVERED
 ```
 ace-hardware-demo/
 ├── pipelines/
-│   ├── config.py              # Centralized configuration
-│   ├── bronze_logistics.py    # Streaming telemetry ingestion
-│   ├── bronze_dimensions.py   # Batch dimension tables
-│   ├── silver_logistics.py    # Enriched telemetry
-│   ├── gold_flo_metrics.py    # Business aggregations
-│   └── analytics_views.sql    # Analytics layer (SQL views)
+│   ├── config/
+│   │   └── config.py                 # Centralized configuration
+│   ├── transform/
+│   │   ├── bronze_logistics.py       # Streaming telemetry ingestion
+│   │   ├── bronze_dimensions.py      # Batch dimension tables
+│   │   ├── silver_logistics.py       # Enriched telemetry
+│   │   └── gold_flo_metrics.py       # Business aggregations
+│   └── analytics/
+│       └── analytics_views.sql       # Analytics layer (SQL views)
 ├── scripts/
-│   ├── generate_data.py       # Data generator
-│   └── sync_with_curl.sh      # Workspace sync utility
-├── data/                      # Generated datasets
+│   ├── generate_data.py              # Data generator
+│   └── sync_with_curl.sh             # Workspace sync utility
+├── data/                             # Generated datasets
 │   ├── telemetry/
 │   └── dimensions/
 └── README.md

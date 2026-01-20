@@ -48,7 +48,7 @@ EOF
 
 # Create workspace directories
 echo "Creating workspace directories..."
-for dir in "" "/pipelines" "/scripts"; do
+for dir in "" "/pipelines" "/pipelines/config" "/pipelines/transform" "/pipelines/analytics" "/scripts"; do
     curl -s --insecure \
         -X POST \
         -H "Authorization: Bearer ${TOKEN}" \
@@ -60,8 +60,22 @@ done
 echo ""
 echo "Uploading files..."
 
-# Upload all Python and SQL files from pipelines/
-for file in "${LOCAL_PATH}/pipelines"/*.py "${LOCAL_PATH}/pipelines"/*.sql; do
+# Upload config files
+for file in "${LOCAL_PATH}/pipelines/config"/*.py; do
+    if [ -f "$file" ] && [[ ! $(basename "$file") == "__"* ]]; then
+        upload_file "$file"
+    fi
+done
+
+# Upload transform files
+for file in "${LOCAL_PATH}/pipelines/transform"/*.py; do
+    if [ -f "$file" ] && [[ ! $(basename "$file") == "__"* ]]; then
+        upload_file "$file"
+    fi
+done
+
+# Upload analytics files
+for file in "${LOCAL_PATH}/pipelines/analytics"/*.sql; do
     if [ -f "$file" ]; then
         upload_file "$file"
     fi

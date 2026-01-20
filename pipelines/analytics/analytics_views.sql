@@ -191,3 +191,4 @@ ORDER BY delay_rate_pct DESC;
 -- MAGIC FROM kaustavpaul_demo.ace_demo.supply_chain_kpi
 -- MAGIC GROUP BY vendor_type
 -- MAGIC ```
+

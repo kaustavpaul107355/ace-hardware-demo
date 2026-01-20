@@ -111,3 +111,4 @@ def logistics_silver():
         col("v.risk_tier").alias("vendor_risk_tier"),
         col("v.on_time_pct").alias("vendor_on_time_pct")
     )
+

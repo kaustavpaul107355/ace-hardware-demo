@@ -104,3 +104,4 @@ SHIPMENT_LINE_ITEMS_SCHEMA = StructType([
     StructField("unit_price", DoubleType(), nullable=False),
     StructField("line_total", DoubleType(), nullable=False),
 ])
+
