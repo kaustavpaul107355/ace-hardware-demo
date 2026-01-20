@@ -3,7 +3,12 @@ Bronze Layer: Dimension Tables (Batch)
 Loads reference data for stores, vendors, shipments, products, and line items
 """
 import dlt
-from config import (
+import sys
+import os
+
+# Add parent directory to path to import config
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from config.config import (
     DIMENSIONS_PATH,
     STORES_SCHEMA,
     VENDORS_SCHEMA,

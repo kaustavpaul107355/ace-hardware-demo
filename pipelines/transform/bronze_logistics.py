@@ -3,7 +3,12 @@ Bronze Layer: Streaming Telemetry Ingestion
 Auto Loader ingests logistics telemetry CSV files from Volume storage
 """
 import dlt
-from config import LOGISTICS_SCHEMA, TELEMETRY_PATH, TELEMETRY_CHECKPOINT
+import sys
+import os
+
+# Add parent directory to path to import config
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from config.config import LOGISTICS_SCHEMA, TELEMETRY_PATH, TELEMETRY_CHECKPOINT
 
 
 @dlt.table(
