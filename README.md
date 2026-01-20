@@ -114,6 +114,19 @@ ARRIVED_DC → OUT_FOR_DELIVERY → DELIVERED
   - **NORTHEAST**: NY, PA, NJ, MA, CT, RI, NH, VT, ME
   - **WEST**: CA, WA, OR, AZ, CO, NV, UT, ID, MT, WY, NM, HI, AK
 
+## ML Feature Engineering
+
+The `notebooks/` directory contains ML feature engineering for predictive analytics:
+
+### Delivery Delay Prediction Model
+- **Notebook**: `ace-ml-feature-process.py`
+- **Target**: Predict stores with high delivery delays (>30 min average)
+- **Features**: 30+ features from store, vendor, carrier, and product metrics
+- **Output**: `ml_features_delivery_delay` table ready for model training
+- **Use Cases**: Stockout prediction, route optimization, vendor scoring
+
+See [notebooks/README.md](notebooks/README.md) for detailed documentation.
+
 ## Use Cases (ACE Hardware FLO)
 
 1. **Stockout Risk Prediction**
@@ -147,6 +160,9 @@ ace-hardware-demo/
 │   │   └── gold_flo_metrics.py       # Business aggregations
 │   └── analytics/
 │       └── analytics_views.sql       # Analytics layer (SQL views)
+├── notebooks/
+│   ├── ace-ml-feature-process.py     # ML feature engineering
+│   └── README.md                     # Notebook documentation
 ├── scripts/
 │   ├── generate_data.py              # Data generator
 │   └── sync_with_curl.sh             # Workspace sync utility
