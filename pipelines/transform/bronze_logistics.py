@@ -4,10 +4,9 @@ Auto Loader ingests logistics telemetry CSV files from Volume storage
 """
 import dlt
 import sys
-import os
 
-# Add parent directory to path to import config
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+# Add config path for DLT workspace imports
+sys.path.insert(0, '/Workspace/Users/kaustav.paul@databricks.com/ace-demo/pipelines')
 from config.config import LOGISTICS_SCHEMA, TELEMETRY_PATH, TELEMETRY_CHECKPOINT
 
 

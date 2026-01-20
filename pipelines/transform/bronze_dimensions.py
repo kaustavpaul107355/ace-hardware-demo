@@ -4,10 +4,9 @@ Loads reference data for stores, vendors, shipments, products, and line items
 """
 import dlt
 import sys
-import os
 
-# Add parent directory to path to import config
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+# Add config path for DLT workspace imports
+sys.path.insert(0, '/Workspace/Users/kaustav.paul@databricks.com/ace-demo/pipelines')
 from config.config import (
     DIMENSIONS_PATH,
     STORES_SCHEMA,
