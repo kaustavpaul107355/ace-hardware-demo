@@ -1353,8 +1353,14 @@ class AppHandler(BaseHTTPRequestHandler):
     def handle_location_monitor_data(self):
         """OPTIMIZED: Combined endpoint for Location Monitor - single API call instead of 2"""
         try:
-            # Execute both queries (still separate for now, but returned together)
-            # In future, could optimize further by combining into single SQL query
+            # Get RSC count (major hubs only)
+            rsc_count_query = f"""
+            SELECT origin_city
+            FROM {DATABRICKS_CONFIG['catalog']}.{DATABRICKS_CONFIG['schema']}.logistics_silver
+            WHERE origin_city IS NOT NULL
+            GROUP BY origin_city
+            HAVING COUNT(DISTINCT shipment_id) >= 20
+            """
             
             # Get RSC stats
             rsc_query = f"""
@@ -1382,14 +1388,13 @@ class AppHandler(BaseHTTPRequestHandler):
             ORDER BY activeRoutes DESC
             """
             
-            # Get network stats (already optimized above)
+            # Get network stats
             network_query = f"""
             SELECT 
               COUNT(DISTINCT store_id) as totalStores,
               COUNT(DISTINCT CASE WHEN store_is_active = TRUE THEN store_id END) as activeStores,
               COUNT(DISTINCT store_state) as statesCovered,
               COUNT(DISTINCT CASE WHEN delay_minutes > 120 THEN store_id END) as atRiskStores,
-              COUNT(DISTINCT origin_city) as totalRSCs,
               ROUND(
                 (COUNT(DISTINCT CASE WHEN store_is_active = TRUE THEN store_id END) * 100.0 / 
                  NULLIF(COUNT(DISTINCT store_id), 0)), 
@@ -1407,8 +1412,12 @@ class AppHandler(BaseHTTPRequestHandler):
             """
             
             # Execute queries
+            rsc_count_table = execute_query(rsc_count_query)
             rsc_table = execute_query(rsc_query)
             network_table = execute_query(network_query)
+            
+            # Count RSCs from the separate query result
+            rsc_count = len(table_to_dicts(rsc_count_table)) if rsc_count_table else 0
             
             rsc_stats = table_to_dicts(rsc_table) if rsc_table else []
             network_results = table_to_dicts(network_table) if network_table else []
@@ -1422,6 +1431,9 @@ class AppHandler(BaseHTTPRequestHandler):
                 'coveragePercent': 0,
                 'avgDeliveryDays': 2.1
             }
+            
+            # Add the RSC count
+            network_stats['totalRSCs'] = rsc_count
             
             # Ensure avgDeliveryDays has default
             if network_stats.get('avgDeliveryDays') is None:
