@@ -133,7 +133,8 @@ export interface NetworkStats {
   activeStores: number;
   statesCovered: number;
   atRiskStores: number;
-  totalRSCs: number;
+  majorRSCs: number;  // Major distribution centers (high volume)
+  totalRSCs: number;  // Total RSCs shown on map
   coveragePercent: number;
   avgDeliveryDays: number;
 }

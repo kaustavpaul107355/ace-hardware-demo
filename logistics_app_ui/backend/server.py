@@ -679,7 +679,6 @@ class AppHandler(BaseHTTPRequestHandler):
               AND origin_lat IS NOT NULL
               AND origin_lng IS NOT NULL
             GROUP BY origin_city, origin_lat, origin_lng
-            HAVING COUNT(DISTINCT shipment_id) >= 20
             ORDER BY shipment_count DESC
             LIMIT 20
             """
@@ -1175,7 +1174,6 @@ class AppHandler(BaseHTTPRequestHandler):
           AND origin_latitude IS NOT NULL
           AND origin_longitude IS NOT NULL
         GROUP BY origin_city, origin_state, origin_latitude, origin_longitude
-        HAVING COUNT(DISTINCT shipment_id) >= 20
         ORDER BY shipment_count DESC
         LIMIT 20
         """
@@ -1353,13 +1351,23 @@ class AppHandler(BaseHTTPRequestHandler):
     def handle_location_monitor_data(self):
         """OPTIMIZED: Combined endpoint for Location Monitor - single API call instead of 2"""
         try:
-            # Get RSC count (major hubs only)
-            rsc_count_query = f"""
+            # Get major RSC count (high volume hubs: >= 20 shipments)
+            major_rsc_query = f"""
             SELECT origin_city
             FROM {DATABRICKS_CONFIG['catalog']}.{DATABRICKS_CONFIG['schema']}.logistics_silver
             WHERE origin_city IS NOT NULL
             GROUP BY origin_city
             HAVING COUNT(DISTINCT shipment_id) >= 20
+            """
+            
+            # Get total RSC count (top 20 by volume)
+            total_rsc_query = f"""
+            SELECT origin_city
+            FROM {DATABRICKS_CONFIG['catalog']}.{DATABRICKS_CONFIG['schema']}.logistics_silver
+            WHERE origin_city IS NOT NULL
+            GROUP BY origin_city
+            ORDER BY COUNT(DISTINCT shipment_id) DESC
+            LIMIT 20
             """
             
             # Get RSC stats
@@ -1412,12 +1420,14 @@ class AppHandler(BaseHTTPRequestHandler):
             """
             
             # Execute queries
-            rsc_count_table = execute_query(rsc_count_query)
+            major_rsc_table = execute_query(major_rsc_query)
+            total_rsc_table = execute_query(total_rsc_query)
             rsc_table = execute_query(rsc_query)
             network_table = execute_query(network_query)
             
-            # Count RSCs from the separate query result
-            rsc_count = len(table_to_dicts(rsc_count_table)) if rsc_count_table else 0
+            # Count RSCs from the separate query results
+            major_rsc_count = len(table_to_dicts(major_rsc_table)) if major_rsc_table else 0
+            total_rsc_count = len(table_to_dicts(total_rsc_table)) if total_rsc_table else 0
             
             rsc_stats = table_to_dicts(rsc_table) if rsc_table else []
             network_results = table_to_dicts(network_table) if network_table else []
@@ -1427,13 +1437,15 @@ class AppHandler(BaseHTTPRequestHandler):
                 'activeStores': 0,
                 'statesCovered': 0,
                 'atRiskStores': 0,
+                'majorRSCs': 0,
                 'totalRSCs': 0,
                 'coveragePercent': 0,
                 'avgDeliveryDays': 2.1
             }
             
-            # Add the RSC count
-            network_stats['totalRSCs'] = rsc_count
+            # Add both RSC counts
+            network_stats['majorRSCs'] = major_rsc_count  # Major hubs (8)
+            network_stats['totalRSCs'] = total_rsc_count   # All RSCs on map (20)
             
             # Ensure avgDeliveryDays has default
             if network_stats.get('avgDeliveryDays') is None:

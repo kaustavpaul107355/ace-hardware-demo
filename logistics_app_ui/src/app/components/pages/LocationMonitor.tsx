@@ -77,7 +77,11 @@ export default function LocationMonitor() {
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Distribution Centers</p>
-                  <p className="text-2xl font-bold text-gray-900">{networkStats?.totalRSCs || 0}</p>
+                  <p className="text-2xl font-bold text-gray-900">
+                    {networkStats?.majorRSCs || 0}
+                    <span className="text-lg text-gray-500 ml-1">/ {networkStats?.totalRSCs || 0}</span>
+                  </p>
+                  <p className="text-xs text-gray-500">Major / Total RSCs</p>
                 </div>
               </div>
             </div>
