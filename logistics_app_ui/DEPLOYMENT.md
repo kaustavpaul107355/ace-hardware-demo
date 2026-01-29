@@ -25,17 +25,34 @@ app/
 
 ## Security - Token Management
 
-### For Git Repository
-- `app.yaml` is committed with **EMPTY** token value
-- Token must be injected during deployment or via environment
+### Three Versions of app.yaml
 
-### For Local Development/Testing
-- Use `app.yaml.local` (git-ignored) with real token
-- Copy from `app.yaml` and set token value
+| Version | Location | Token | Purpose |
+|---------|----------|-------|---------|
+| `app.yaml` | Git repository | ❌ Empty | Version control (safe to commit) |
+| `app.yaml.local` | Local only (git-ignored) | ✅ Real token | Source for deployment |
+| workspace `app.yaml` | Databricks workspace | ✅ Real token | Running app |
 
-### For Workspace Deployment
-- Workspace version of `app.yaml` has the actual token
-- Token value: Set during deployment (not in git)
+### Workflow
+
+1. **Git Commit**: 
+   - `app.yaml` (empty token) is committed to git
+   - `app.yaml.local` is never committed (protected by `.gitignore`)
+
+2. **Local Development**:
+   - Edit `app.yaml.local` for local testing
+   - Never commit `app.yaml.local`
+
+3. **Deployment to Workspace**:
+   ```bash
+   # Upload app.yaml.local (with token) as app.yaml in workspace
+   databricks workspace import \
+     /Workspace/.../app.yaml \      # ← Destination in workspace
+     --file app.yaml.local \         # ← Source from local
+     --overwrite
+   ```
+
+**Critical**: Always upload `app.yaml.local` to workspace, never `app.yaml`
 
 ## Deployment Commands
 
@@ -46,16 +63,19 @@ cd logistics_app_ui
 # Build frontend
 npm run build
 
-# Upload essential files ONLY
+# ⚠️ IMPORTANT: Upload app.yaml.local (has token) to workspace as app.yaml
 databricks workspace import /Workspace/Users/kaustav.paul@databricks.com/ace-demo/app/app.yaml \
   --file app.yaml.local --format AUTO --overwrite --profile e2-demo-field
+  # ↑ Note: We upload app.yaml.local (with token) TO app.yaml in workspace
 
+# Upload backend files
 databricks workspace import /Workspace/Users/kaustav.paul@databricks.com/ace-demo/app/backend/server.py \
   --file backend/server.py --format AUTO --overwrite --profile e2-demo-field
 
 databricks workspace import /Workspace/Users/kaustav.paul@databricks.com/ace-demo/app/backend/requirements.txt \
   --file backend/requirements.txt --format AUTO --overwrite --profile e2-demo-field
 
+# Upload built frontend
 databricks workspace import-dir dist \
   /Workspace/Users/kaustav.paul@databricks.com/ace-demo/app/dist \
   --overwrite --profile e2-demo-field
@@ -65,6 +85,11 @@ databricks apps deploy ace-supply-chain-app \
   --source-code-path "/Workspace/Users/kaustav.paul@databricks.com/ace-demo/app" \
   --profile e2-demo-field
 ```
+
+**Key Point**: 
+- Git tracks `app.yaml` (no token) ← Safe for version control
+- Workspace uses `app.yaml.local` content (has token) ← Required for app to run
+- We upload `app.yaml.local` FILE to workspace `app.yaml` PATH during deployment
 
 ### Critical: What NOT to Upload
 - ❌ `node_modules/` (corrupts app)
