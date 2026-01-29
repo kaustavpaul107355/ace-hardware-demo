@@ -1274,20 +1274,21 @@ class AppHandler(BaseHTTPRequestHandler):
     
     def handle_network_stats(self):
         """Get network-wide statistics - OPTIMIZED: Single table scan instead of 4 CTEs"""
-        query = f"""
-        WITH major_rscs AS (
-          SELECT origin_city
-          FROM {DATABRICKS_CONFIG['catalog']}.{DATABRICKS_CONFIG['schema']}.logistics_silver
-          WHERE origin_city IS NOT NULL
-          GROUP BY origin_city
-          HAVING COUNT(DISTINCT shipment_id) >= 20
-        )
+        # First get major RSC count separately
+        rsc_count_query = f"""
+        SELECT origin_city
+        FROM {DATABRICKS_CONFIG['catalog']}.{DATABRICKS_CONFIG['schema']}.logistics_silver
+        WHERE origin_city IS NOT NULL
+        GROUP BY origin_city
+        HAVING COUNT(DISTINCT shipment_id) >= 20
+        """
+        
+        main_query = f"""
         SELECT 
           COUNT(DISTINCT store_id) as totalStores,
           COUNT(DISTINCT CASE WHEN store_is_active = TRUE THEN store_id END) as activeStores,
           COUNT(DISTINCT store_state) as statesCovered,
           COUNT(DISTINCT CASE WHEN delay_minutes > 120 THEN store_id END) as atRiskStores,
-          (SELECT COUNT(DISTINCT origin_city) FROM major_rscs) as totalRSCs,
           ROUND(
             (COUNT(DISTINCT CASE WHEN store_is_active = TRUE THEN store_id END) * 100.0 / 
              NULLIF(COUNT(DISTINCT store_id), 0)), 
@@ -1305,8 +1306,11 @@ class AppHandler(BaseHTTPRequestHandler):
         """
         
         try:
-            table = execute_query(query)
-            if not table:
+            # Execute both queries
+            rsc_table = execute_query(rsc_count_query)
+            main_table = execute_query(main_query)
+            
+            if not main_table:
                 logger.error("Network stats query returned None")
                 self.send_json_response({
                     'totalStores': 0,
@@ -1319,11 +1323,15 @@ class AppHandler(BaseHTTPRequestHandler):
                 })
                 return
             
-            results = table_to_dicts(table)
+            # Count RSCs from the separate query result
+            rsc_count = len(table_to_dicts(rsc_table)) if rsc_table else 0
+            
+            results = table_to_dicts(main_table)
             if results:
-                logger.info(f"Network stats: {results[0]}")
-                # Ensure avgDeliveryDays has a default if NULL
                 result = results[0]
+                result['totalRSCs'] = rsc_count  # Add the RSC count
+                logger.info(f"Network stats: {result}")
+                # Ensure avgDeliveryDays has a default if NULL
                 if result.get('avgDeliveryDays') is None:
                     result['avgDeliveryDays'] = 2.1
                 self.send_json_response(result)
