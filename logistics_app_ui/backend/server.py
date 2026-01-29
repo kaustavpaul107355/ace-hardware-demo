@@ -1275,12 +1275,19 @@ class AppHandler(BaseHTTPRequestHandler):
     def handle_network_stats(self):
         """Get network-wide statistics - OPTIMIZED: Single table scan instead of 4 CTEs"""
         query = f"""
+        WITH major_rscs AS (
+          SELECT origin_city
+          FROM {DATABRICKS_CONFIG['catalog']}.{DATABRICKS_CONFIG['schema']}.logistics_silver
+          WHERE origin_city IS NOT NULL
+          GROUP BY origin_city
+          HAVING COUNT(DISTINCT shipment_id) >= 20
+        )
         SELECT 
           COUNT(DISTINCT store_id) as totalStores,
           COUNT(DISTINCT CASE WHEN store_is_active = TRUE THEN store_id END) as activeStores,
           COUNT(DISTINCT store_state) as statesCovered,
           COUNT(DISTINCT CASE WHEN delay_minutes > 120 THEN store_id END) as atRiskStores,
-          COUNT(DISTINCT origin_city) as totalRSCs,
+          (SELECT COUNT(DISTINCT origin_city) FROM major_rscs) as totalRSCs,
           ROUND(
             (COUNT(DISTINCT CASE WHEN store_is_active = TRUE THEN store_id END) * 100.0 / 
              NULLIF(COUNT(DISTINCT store_id), 0)), 
