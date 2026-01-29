@@ -640,17 +640,21 @@ ax3.grid(axis='x', alpha=0.3)
 
 # 4. Delivery Volume vs Delay Rate
 ax4 = axes[1, 1]
-volume_bins = pd.qcut(df['total_deliveries'], q=5, labels=['Very Low', 'Low', 'Medium', 'High', 'Very High'])
+# Use qcut without labels to avoid mismatch when duplicates are dropped
+volume_bins = pd.qcut(df['total_deliveries'], q=5, duplicates='drop')
 volume_stats = df.groupby(volume_bins, observed=True).agg({
     'store_delay_rate': 'mean',
     'store_id': 'count'
 }).reset_index()
 volume_stats.columns = ['volume', 'avg_delay_rate', 'count']
+# Convert interval index to string for better display
+volume_stats['volume'] = volume_stats['volume'].astype(str)
 ax4.bar(volume_stats['volume'], volume_stats['avg_delay_rate'], color='teal', alpha=0.7)
 ax4.set_ylabel('Average Delay Rate', fontsize=11)
-ax4.set_xlabel('Delivery Volume', fontsize=11)
+ax4.set_xlabel('Delivery Volume Range', fontsize=11)
 ax4.set_title('Delay Rate by Delivery Volume', fontsize=13, fontweight='bold')
 ax4.grid(axis='y', alpha=0.3)
+ax4.tick_params(axis='x', rotation=45, labelsize=9)
 for i, v in enumerate(volume_stats['avg_delay_rate']):
     ax4.text(i, v + 0.005, f'{v:.3f}', ha='center', fontweight='bold', fontsize=9)
 

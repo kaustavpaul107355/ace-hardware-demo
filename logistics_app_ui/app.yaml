@@ -1,0 +1,15 @@
+command: ["python", "backend/server.py"]
+
+env:
+  - name: "DATABRICKS_HOST"
+    value: "e2-demo-field-eng.cloud.databricks.com"
+  - name: "DATABRICKS_SERVER_HOSTNAME"
+    value: "e2-demo-field-eng.cloud.databricks.com"
+  - name: "DATABRICKS_HTTP_PATH"
+    value: "/sql/1.0/warehouses/4b9b953939869799"
+  - name: "DATABRICKS_ACCESS_TOKEN"
+    value: "" # Injected by Databricks Apps runtime
+  - name: "DATABRICKS_CATALOG"
+    value: "kaustavpaul_demo"
+  - name: "DATABRICKS_SCHEMA"
+    value: "ace_demo"

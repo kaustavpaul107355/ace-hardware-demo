@@ -1,0 +1,4 @@
+# ACE Logistics Dashboard - Backend Dependencies
+# Minimal dependencies for Databricks Apps
+
+databricks-sql-connector==3.3.0

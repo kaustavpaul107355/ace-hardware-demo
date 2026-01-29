@@ -59,3 +59,31 @@ temp/
 
 # OS
 Thumbs.db
+
+# Additional cleanup patterns
+*.pyc
+*.pyo
+__pycache__/
+.DS_Store
+*.log
+*.tmp
+test_*.py
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Node modules and build artifacts
+logistics_app_ui/node_modules/
+logistics_app_ui/dist/
+logistics_app_ui/.vite/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+Thumbs.db
+.Spotlight-V100
+.Trashes

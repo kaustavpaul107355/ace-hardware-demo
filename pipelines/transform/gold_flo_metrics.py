@@ -3,7 +3,7 @@ Gold Layer: Business Metrics for FLO (Fulfillment & Logistics Optimization)
 Aggregated tables for analytics and dashboards
 """
 import dlt
-from pyspark.sql.functions import avg, col, count, sum as _sum, max as _max
+from pyspark.sql.functions import avg, col, count, sum as _sum, max as _max, when
 
 
 @dlt.table(
@@ -26,10 +26,12 @@ def store_delay_metrics():
         )
         .agg(
             count("*").alias("total_deliveries"),
+            # Delay metrics (delay_minutes is NULL for on-time deliveries)
             _sum("delay_minutes").alias("total_delay_minutes"),
             avg("delay_minutes").alias("avg_delay_minutes"),
             _max("delay_minutes").alias("max_delay_minutes"),
-            count("delay_minutes").alias("delayed_shipments"),
+            # Count only delayed shipments (where delay_minutes IS NOT NULL and > 0)
+            _sum(when(col("delay_minutes").isNotNull() & (col("delay_minutes") > 0), 1).otherwise(0)).alias("delayed_shipments"),
             _sum("shipment_value").alias("total_shipment_value"),
             avg("temperature_celsius").alias("avg_temperature")
         )
@@ -53,7 +55,8 @@ def vendor_performance():
         .groupBy("vendor_id", "vendor_name", "vendor_type", "vendor_risk_tier", "region_id")
         .agg(
             count("*").alias("total_deliveries"),
-            count("delay_minutes").alias("delayed_deliveries"),
+            # Count only delayed deliveries (where delay_minutes IS NOT NULL and > 0)
+            _sum(when(col("delay_minutes").isNotNull() & (col("delay_minutes") > 0), 1).otherwise(0)).alias("delayed_deliveries"),
             avg("delay_minutes").alias("avg_delay_minutes"),
             _sum("shipment_value").alias("total_value_delivered")
         )
@@ -77,7 +80,8 @@ def carrier_performance():
         .groupBy("carrier")
         .agg(
             count("*").alias("total_deliveries"),
-            count("delay_minutes").alias("delayed_deliveries"),
+            # Count only delayed deliveries (where delay_minutes IS NOT NULL and > 0)
+            _sum(when(col("delay_minutes").isNotNull() & (col("delay_minutes") > 0), 1).otherwise(0)).alias("delayed_deliveries"),
             avg("delay_minutes").alias("avg_delay_minutes"),
             _max("delay_minutes").alias("max_delay_minutes"),
             _sum("shipment_value").alias("total_value_delivered")

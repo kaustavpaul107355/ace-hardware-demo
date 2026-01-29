@@ -7,7 +7,7 @@ import random
 import uuid
 
 
-DEFAULT_BASE_TIME = "2026-01-14T00:00:00Z"
+DEFAULT_BASE_TIME = "2026-01-01T00:00:00Z"
 VENDOR_TYPES = ["ACE", "NON_ACE"]
 ASN_STATUSES = ["CREATED", "SHIPPED", "IN_TRANSIT", "DELIVERED", "CANCELLED"]
 CARRIERS = ["ACE_LOGISTICS", "FEDEX_FREIGHT", "XPO", "OLD_DOMINION", "ESTES"]
@@ -84,6 +84,18 @@ EVENT_TYPES = [
 DELAY_REASONS = [
     "WEATHER", "TRAFFIC", "MECHANICAL_FAILURE", "DRIVER_SHORTAGE",
     "CUSTOMS_DELAY", "ROUTE_OPTIMIZATION", "LOADING_DELAY", "NONE"
+]
+
+# Major RSC/Distribution Center locations (heavily weighted for realistic supply chain)
+MAJOR_RSC_HUBS = [
+    ("Kansas City", "MO", 39.0997, -94.5786),  # Primary RSC
+    ("Chicago", "IL", 41.8781, -87.6298),      # Major Midwest hub
+    ("Atlanta", "GA", 33.7490, -84.3880),      # Southeast hub
+    ("Los Angeles", "CA", 34.0522, -118.2437), # West Coast hub
+    ("Dallas", "TX", 32.7767, -96.7970),       # South/Central hub
+    ("Columbus", "OH", 39.9612, -82.9988),     # Midwest hub
+    ("Phoenix", "AZ", 33.4484, -112.0740),     # Southwest hub
+    ("Philadelphia", "PA", 39.9526, -75.1652), # Northeast hub
 ]
 
 
@@ -246,15 +258,21 @@ def generate_shipments(
         vendor = rng.choice(vendors)
         store = rng.choice(stores)
         carrier = rng.choice(CARRIERS)
-        planned_departure = base_time + timedelta(hours=rng.randint(-24, 72))
+        # Spread shipments across full January (31 days = 744 hours)
+        planned_departure = base_time + timedelta(hours=rng.randint(0, 744))
         transit_hours = rng.randint(12, 72)
         planned_arrival = planned_departure + timedelta(hours=transit_hours)
         
-        # Pick origin from a random region/state with GPS
-        origin_region = rng.choice(all_regions)
-        origin_state = rng.choice(list(CITIES_BY_REGION[origin_region].keys()))
-        origin_city_data = rng.choice(CITIES_BY_REGION[origin_region][origin_state])
-        origin_city, origin_lat, origin_lon = origin_city_data
+        # Pick origin: 75% from major RSC hubs, 25% from random cities
+        if rng.random() < 0.75:
+            # Use major RSC hub
+            origin_city, origin_state, origin_lat, origin_lon = rng.choice(MAJOR_RSC_HUBS)
+        else:
+            # Use random city (for smaller regional distribution centers)
+            origin_region = rng.choice(all_regions)
+            origin_state = rng.choice(list(CITIES_BY_REGION[origin_region].keys()))
+            origin_city_data = rng.choice(CITIES_BY_REGION[origin_region][origin_state])
+            origin_city, origin_lat, origin_lon = origin_city_data
         
         # Calculate shipment value from random products
         num_line_items = rng.randint(3, 15)
@@ -328,7 +346,7 @@ def generate_logistics_events(
         lon += rng.uniform(-0.05, 0.05)
         return round(lat, 6), round(lon, 6)
     
-    for shipment in tracked_shipments:
+    for shipment_index, shipment in enumerate(tracked_shipments):
         vendor = vendors_by_id[shipment.vendor_id]
         store = stores_by_id[shipment.store_id]
         truck_id = f"TRUCK-{rng.randint(100, 999)}"
@@ -336,10 +354,25 @@ def generate_logistics_events(
         planned_departure = parse_iso_datetime(shipment.planned_departure_ts)
         planned_arrival = parse_iso_datetime(shipment.planned_arrival_ts)
         
-        # Determine if shipment will be delayed based on vendor performance
-        is_delayed = rng.random() > vendor.on_time_pct
-        delay_minutes = rng.randint(30, 480) if is_delayed else 0
-        delay_reason = rng.choice([r for r in DELAY_REASONS if r != "NONE"]) if is_delayed else "NONE"
+        # Check if shipment is during the winter storm period (Jan 23-26, 2026)
+        storm_start = datetime(2026, 1, 23, 0, 0, 0, tzinfo=timezone.utc)
+        storm_end = datetime(2026, 1, 27, 0, 0, 0, tzinfo=timezone.utc)
+        in_storm_period = (
+            (planned_departure >= storm_start and planned_departure < storm_end) or
+            (planned_arrival >= storm_start and planned_arrival < storm_end)
+        )
+        
+        # Determine if shipment will be delayed
+        if in_storm_period:
+            # During winter storm: 70% delayed, much longer delays, weather is primary cause
+            is_delayed = rng.random() < 0.70
+            delay_minutes = rng.randint(120, 720) if is_delayed else 0  # 2-12 hours delay
+            delay_reason = "WEATHER" if is_delayed else "NONE"
+        else:
+            # Normal operations: based on vendor performance
+            is_delayed = rng.random() > vendor.on_time_pct
+            delay_minutes = rng.randint(30, 480) if is_delayed else 0
+            delay_reason = rng.choice([r for r in DELAY_REASONS if r != "NONE"]) if is_delayed else "NONE"
         
         # Generate event sequence with GPS interpolation
         event_sequence = [
@@ -401,7 +434,7 @@ def generate_logistics_events(
                 planned_arrival.isoformat(),
                 event_ts.isoformat() if event_type == "DELIVERED" else None,
                 status,
-                delay_minutes if event_type == "DELIVERED" and is_delayed else None,
+                delay_minutes if is_delayed else None,  # Propagate delay to all events for delayed shipments
                 event_ts.date().isoformat(),
                 event_type,
                 delay_reason,
