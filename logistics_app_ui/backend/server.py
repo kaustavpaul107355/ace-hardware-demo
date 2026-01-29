@@ -668,15 +668,20 @@ class AppHandler(BaseHTTPRequestHandler):
             """
             
             rsc_query = f"""
-            SELECT DISTINCT
+            SELECT 
               origin_city as name,
               origin_lat as lat,
               origin_lng as lng,
-              'active' as status
+              'active' as status,
+              COUNT(DISTINCT shipment_id) as shipment_count
             FROM {DATABRICKS_CONFIG['catalog']}.{DATABRICKS_CONFIG['schema']}.logistics_silver
             WHERE origin_city IS NOT NULL
               AND origin_lat IS NOT NULL
               AND origin_lng IS NOT NULL
+            GROUP BY origin_city, origin_lat, origin_lng
+            HAVING COUNT(DISTINCT shipment_id) >= 20
+            ORDER BY shipment_count DESC
+            LIMIT 20
             """
             
             store_query = f"""
@@ -1158,7 +1163,7 @@ class AppHandler(BaseHTTPRequestHandler):
     def handle_rsc_locations(self):
         """Get distinct RSC (Retail Support Center) / warehouse locations"""
         query = f"""
-        SELECT DISTINCT
+        SELECT
           origin_city as name,
           origin_city as city,
           origin_state as state,
@@ -1170,6 +1175,7 @@ class AppHandler(BaseHTTPRequestHandler):
           AND origin_latitude IS NOT NULL
           AND origin_longitude IS NOT NULL
         GROUP BY origin_city, origin_state, origin_latitude, origin_longitude
+        HAVING COUNT(DISTINCT shipment_id) >= 20
         ORDER BY shipment_count DESC
         LIMIT 20
         """
