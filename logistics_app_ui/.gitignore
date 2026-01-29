@@ -1,0 +1,30 @@
+# Environment and secrets
+.env
+.env.local
+*.local
+app.yaml.local
+
+# Build outputs
+dist/
+node_modules/
+*.pyc
+__pycache__/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Databricks
+.databricks/
+.databricksignore
+
+# Logs
+*.log
+logs/

@@ -8,7 +8,7 @@ env:
   - name: "DATABRICKS_HTTP_PATH"
     value: "/sql/1.0/warehouses/4b9b953939869799"
   - name: "DATABRICKS_ACCESS_TOKEN"
-    value: "" # Injected by Databricks Apps runtime
+    value: "" # Set this value during deployment or use app.yaml.local for testing
   - name: "DATABRICKS_CATALOG"
     value: "kaustavpaul_demo"
   - name: "DATABRICKS_SCHEMA"
